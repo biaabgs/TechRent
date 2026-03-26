@@ -22,8 +22,43 @@ const registro = async (req, res) => {
 
 // POST /auth/login - autentica e retorna JWT
 const login = async (req, res) => {
-  // TODO
-  res.json({ mensagem: 'login - não implementado' });
+  try {
+    const { email, senha } = req.body;
+
+    if (!email || email.trim() === '') {
+      return res.status(400).json({
+        sucesso: false,
+        erro: 'Email não pode estar vazio',
+        mensagem: 'Email é obrigatório'
+      })
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        sucesso: false,
+        erro: 'Email inválido',
+        mensagem: 'Formato de email inválido'
+      });
+    }
+
+    if(!senha || senha.trim() === ''){
+      return res.status(400).json({
+        sucesso: false,
+        erro: 'Senha não pode estar vazia',
+        mensagem: 'A senha é obrigatória'
+      })
+    }
+
+    
+  } catch (error) {
+    console.error('Erro ao fazer login: ', error);
+    res.status(500).json({
+      sucesso: false,
+      erro: 'Erro interno do servidor',
+      mensagem: 'Erro interno do servidos'
+    })
+  }
 };
 
 module.exports = { registro, login };
