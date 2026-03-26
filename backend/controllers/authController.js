@@ -16,8 +16,16 @@ const db = require('../config/database');
 
 // POST /auth/registro - cria um novo usuário
 const registro = async (req, res) => {
-  // TODO
-  res.json({ mensagem: 'registro - não implementado' });
+  try{
+
+  } catch (error) {
+    console.error('Erro ao fazer cadastro: ', error);
+    res.status(500).json({
+      sucesso: false,
+      erro: 'Erro interno do servidor',
+      mensagem: 'Erro interno do servidor'
+    })
+  }
 };
 
 // POST /auth/login - autentica e retorna JWT
@@ -56,7 +64,7 @@ const login = async (req, res) => {
     res.status(500).json({
       sucesso: false,
       erro: 'Erro interno do servidor',
-      mensagem: 'Erro interno do servidos'
+      mensagem: 'Erro interno do servidor'
     })
   }
 };
