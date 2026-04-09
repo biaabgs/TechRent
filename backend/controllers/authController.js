@@ -171,7 +171,9 @@ class AuthController {
                 dados: {
                     id: usuarioId,
                     nome: dadosUsuario.nome,
-                    email: dadosUsuario.email
+                    email: dadosUsuario.email,
+                    cnpj: dadosUsuario.cnpj
+                    /* tipo: dadosUsuario.tipo */
                 }
             });
         } catch (error) {
