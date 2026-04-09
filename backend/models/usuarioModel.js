@@ -1,33 +1,68 @@
-import { create } from '../config/database';
+import { create, read, update, deleteRecord, comparePassword, hashPassword, getConnection } from '../config/database.js';
 
-class usuarioModel{
-    static async criar(dadosUsuario){
-    try{
-        const senhaHash = await hashPassword(dadosUsuario.senha);
+// Model para operações com usuários
+class UsuarioModel {
+    // Listar todos os usuários (com paginação)
+    // Listar todos os usuários (com paginação)
+    static async listarTodos(pagina = 1, limite = 10) {
+        try {
+            const offset = (pagina - 1) * limite;
 
-        const dadosComHash = {
-            nome: dadosUsuario.nome,
-            email: dadosUsuario.email,
-            senha: senhaHash,
-            
+            const conn = await getConnection();
+            const [rows] = await conn.query(
+                "SELECT SQL_CALC_FOUND_ROWS * FROM usuarios LIMIT ? OFFSET ?",
+                [limite, offset]
+            );
+
+            const [[{ 'FOUND_ROWS()': total }]] = await conn.query("SELECT FOUND_ROWS()");
+
+            // Remover senha_hash
+            const usuariosSemSenha = rows.map(({ senha_hash, ...usuario }) => usuario);
+
+            return {
+                usuarios: usuariosSemSenha,
+                pagina,
+                limite,
+                total,
+                totalPaginas: Math.ceil(total / limite)
+            };
+        } catch (error) {
+            console.error('Erro ao listar usuários:', error);
+            throw error;
         }
-    } catch{
-
     }
-}
 
-}
+    // Buscar usuário por ID
+    static async buscarPorId(id) {
+        try {
+            const rows = await read('usuarios', `id = ${id}`);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erro ao buscar usuário por ID:', error);
+            throw error;
+        }
+    }
 
-/* static async criar(dadosUsuario) {
+    // Buscar usuário por email
+    static async buscarPorEmail(email) {
+        try {
+            const rows = await read('usuarios', `email = '${email}'`);
+            return rows[0] || null;
+        } catch (error) {
+            console.error('Erro ao buscar usuário por email:', error);
+            throw error;
+        }
+    }
+
+    // Criar novo usuário
+    static async criar(dadosUsuario) {
         try {
             // Hash da senha antes de salvar
             const senhaHash = await hashPassword(dadosUsuario.senha);
 
             const dadosComHash = {
-                nome_social: dadosUsuario.nome_social,
+                nome: dadosUsuario.nome_social,
                 email: dadosUsuario.email,
-                cnpj: dadosUsuario.cnpj,
-                telefone: dadosUsuario.telefone,
                 senha_hash: senhaHash
             };
 
@@ -37,4 +72,56 @@ class usuarioModel{
             throw error;
         }
     }
- */
+
+    // Atualizar usuário
+    static async atualizar(id, dadosUsuario) {
+        try {
+            // Se a senha foi fornecida, fazer hash
+            if (dadosUsuario.senha) {
+                dadosUsuario.senha_hash = await hashPassword(dadosUsuario.senha);
+                delete dadosUsuario.senha;
+            }
+
+            return await update('usuarios', dadosUsuario, `id = ${id}`);
+        } catch (error) {
+            console.error('Erro ao atualizar usuário:', error);
+            throw error;
+        }
+    }
+
+    // Excluir usuário
+    static async excluir(id) {
+        try {
+            return await deleteRecord('usuarios', `id = ${id}`);
+        } catch (error) {
+            console.error('Erro ao excluir usuário:', error);
+            throw error;
+        }
+    }
+
+    // Verificar credenciais de login
+    static async verificarCredenciais(email, senha) {
+        try {
+            const usuario = await this.buscarPorEmail(email);
+
+            if (!usuario) {
+                return null;
+            }
+
+            const senhaValida = await comparePassword(senha, usuario.senha_hash);
+
+            if (!senhaValida) {
+                return null;
+            }
+
+            // Retornar usuário sem a senha
+            const { senha_hash: _, ...usuarioSemSenha } = usuario;
+            return usuarioSemSenha;
+        } catch (error) {
+            console.error('Erro ao verificar credenciais:', error);
+            throw error;
+        }
+    }
+}
+
+export default UsuarioModel;
