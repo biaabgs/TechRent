@@ -16,7 +16,7 @@ const express = require('express');
 // ---- Importação das rotas ----
 const authRoutes         = require('./routes/authRoutes');
 const equipamentosRoutes = require('./routes/equipamentosRoutes');
-const chamadosRoutes     = require('./routes/chamadosRoutes');
+// const chamadosRoutes     = require('./routes/chamadosRoutes');
 const manutencaoRoutes   = require('./routes/manutencaoRoutes');
 const dashboardRoutes    = require('./routes/dashboardRoutes');
 
@@ -35,7 +35,7 @@ app.use(express.json());
 // Cada prefixo aponta para um arquivo de rotas separado
 app.use('/auth',         authRoutes);
 app.use('/equipamentos', equipamentosRoutes);
-app.use('/chamados',     chamadosRoutes);
+// app.use('/chamados',     chamadosRoutes);
 app.use('/manutencao',   manutencaoRoutes);
 app.use('/dashboard',    dashboardRoutes);
 
