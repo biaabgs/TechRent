@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { autenticar, autorizar } = require('../middlewares/auth');
+import { autenticar, autorizar } from '../middlewares/auth';
 const ctrl = require('../controllers/chamadosController');
 
 // Listar chamados (cada perfil vê uma visão diferente — lógica no controller)
