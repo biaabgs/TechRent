@@ -5,12 +5,10 @@
 const express = require('express');
 const router = express.Router();
 const { autenticar, autorizar } = require('../middlewares/auth');
-const ctrl = require('../controllers/manutencaoController');
+const ManutencaoController = require('../controllers/manutencaoController');
 
-// Listar histórico de manutenções (admin e técnico)
-router.get('/', autenticar, autorizar('admin', 'tecnico'), ctrl.listar);
-
-// Registrar um reparo (apenas técnico)
-router.post('/', autenticar, autorizar('tecnico'), ctrl.registrar);
+router.get('/', autenticar, autorizar('admin', 'tecnico'), ManutencaoController.list);
+router.post('/', autenticar, autorizar('admin','tecnico'), ManutencaoController.register);
+router.put('/:id', autenticar, autorizar('admin', 'tecnico'), ManutencaoController.updateDescription);
 
 module.exports = router;

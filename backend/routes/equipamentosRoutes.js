@@ -7,17 +7,15 @@
 const express = require('express');
 const router = express.Router();
 const { autenticar, autorizar } = require('../middlewares/auth');
-const ctrl = require('../controllers/equipamentosController');
+const EquipamentoController = require('../controllers/equipamentosController');
 
-// Qualquer usuário autenticado pode listar equipamentos
-router.get('/', autenticar, ctrl.listar);
+router.get('/', autenticar, EquipamentoController.listFunctioning);
+router.get('/todos', autenticar, autorizar('admin'), EquipamentoController.listAll);
+router.get('/:id', autenticar, EquipamentoController.findById);
 
-// Qualquer usuário autenticado pode ver um equipamento específico
-router.get('/:id', autenticar, ctrl.buscarPorId);
-
-// Apenas admin pode criar, atualizar ou remover equipamentos
-router.post('/', autenticar, autorizar('admin'), ctrl.criar);
-router.put('/:id', autenticar, autorizar('admin'), ctrl.atualizar);
-router.delete('/:id', autenticar, autorizar('admin'), ctrl.remover);
+router.post('/', autenticar, autorizar('admin'), EquipamentoController.create);
+router.put('/:id', autenticar, autorizar('admin'), EquipamentoController.update);
+router.put('/:id/status', autenticar, autorizar('admin','tecnico'), EquipamentoController.updateStatus)
+router.delete('/:id', autenticar, autorizar('admin'), EquipamentoController.delete);
 
 module.exports = router;

@@ -23,4 +23,30 @@ const pool = mysql.createPool({
   typeCast: true,
 });
 
-module.exports = pool;
+async function query(sql, params = []) {
+  try {
+    const [results] = await pool.execute(sql, params);
+    return results;
+  } catch (error) {
+    console.error('Erro na query:', error.message);
+    throw error;
+  }
+};
+
+async function withTransaction(callback) {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+    const result = await callback(connection);
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+module.exports = { pool, query, withTransaction };

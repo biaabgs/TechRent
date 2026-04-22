@@ -6,6 +6,7 @@
 // permitir o acesso a uma rota protegida.
 
 const jwt = require('jsonwebtoken');
+const { verifyJWT } = require('../config/jwt');
 
 // -------------------------------------------------
 // autenticar
@@ -30,7 +31,7 @@ const autenticar = (req, res, next) => {
 
   try {
     // jwt.verify lança um erro se o token for inválido ou expirado
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = verifyJWT(token);
 
     // Salva os dados do usuário na requisição para uso nas próximas funções
     req.usuario = payload;

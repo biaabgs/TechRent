@@ -7,36 +7,144 @@
 //   aberto -> em_atendimento -> resolvido
 //                           -> cancelado
 
-const db = require('../config/database');
+const { withTransaction } = require('../config/database');
+const EquipamentoModel = require('../model/equipamentModel');
+const ChamadaModel = require('../model/chamadaModel');
 
-// GET /chamados - lista chamados
-//   admin/técnico -> todos os chamados
-//   cliente       -> apenas os seus (WHERE cliente_id = req.usuario.id)
-const listar = async (req, res) => {
-  // TODO
-  res.json({ mensagem: 'listar chamados - não implementado' });
-};
+class ChamadaController {
 
-// GET /chamados/:id - retorna um chamado pelo ID
-const buscarPorId = async (req, res) => {
-  // TODO
-  res.json({ mensagem: 'buscarPorId - não implementado' });
-};
+  static async list(req, res) {
+    try {
+      const { id, nivel_acesso } = req.usuario;
+      const isClient = nivel_acesso === "cliente";
 
-// POST /chamados - abre um novo chamado (cliente/admin)
-// Body esperado: { titulo, descricao, equipamento_id, prioridade }
-const criar = async (req, res) => {
-  // TODO: inserir em chamados com cliente_id = req.usuario.id
-  //       e atualizar equipamentos.status para 'em_manutencao'
-  res.json({ mensagem: 'criar chamado - não implementado' });
-};
+      const chamados = await ChamadaModel.findByAccessLevel({ id, cliente: isClient });
 
-// PUT /chamados/:id/status - atualiza o status do chamado (técnico/admin)
-// Body esperado: { status, tecnico_id (opcional) }
-const atualizarStatus = async (req, res) => {
-  // TODO: ex: aberto -> em_atendimento -> resolvido
-  //       ao resolver, atualizar equipamentos.status para 'operacional'
-  res.json({ mensagem: 'atualizarStatus - não implementado' });
-};
+      return res.status(200).json({ ok: true, chamados });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Erro ao listar chamados!" });
+    }
+  }
 
-module.exports = { listar, buscarPorId, criar, atualizarStatus };
+  static async findById(req, res) {
+    try {
+      const { id } = req.params;
+      const chamado = await ChamadaModel.findById(id);
+
+      if (!chamado) {
+        return res.status(404).json({ erro: "Chamado não encontrado!" });
+      }
+
+      if (req.usuario?.nivel_acesso === "cliente" && chamado.cliente_id !== req.usuario.id) {
+        return res.status(403).json({ erro: "Você não tem permissão para visualizar este chamado." });
+      }
+
+      return res.status(200).json({ ok: true, chamado });
+    } catch (erro) {
+      console.error("Erro ao buscar chamado por ID:", erro);
+      return res.status(500).json({ erro: "Erro ao buscar detalhes do chamado!" });
+    }
+  }
+
+  static async create(req, res) {
+    try {
+      const { titulo, descricao, equipamento_id, prioridade } = req.body;
+      const cliente_id = req.usuario.id;
+
+      if (!titulo || !descricao || !equipamento_id) {
+        return res.status(400).json({ erro: "Título, descrição e equipamento são obrigatórios." });
+      }
+
+      const equipamento = await EquipamentoModel.findById(equipamento_id);
+      if (!equipamento) {
+        return res.status(404).json({ erro: "Equipamento não encontrado." });
+      }
+
+      if (equipamento.status !== "operacional") {
+        return res.status(409).json({ erro: "Apenas equipamentos operacionais podem receber novos chamados." });
+      }
+
+      const novoChamado = await withTransaction(async (connection) => {
+        const chamadoId = await ChamadaModel.create(
+          {
+            titulo,
+            descricao,
+            cliente_id,
+            equipamento_id,
+            tecnico_id: null,
+            prioridade: prioridade || "media",
+            status: "aberto",
+          },
+          connection
+        );
+
+        await EquipamentoModel.updateStatus({ id: equipamento_id, status: 'em_manutencao' }, connection);
+        return chamadoId;
+      });
+
+      return res.status(201).json({
+        ok: true,
+        mensagem: "Chamado aberto com sucesso! O equipamento agora consta como 'em manutenção'!",
+        chamado_id: novoChamado
+      });
+    } catch (erro) {
+      console.error("Erro ao criar chamado:", erro);
+      return res.status(500).json({ erro: "Erro interno ao abrir o chamado!" });
+    }
+  }
+
+  static async updateStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status, tecnico_id } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ erro: "O novo status é obrigatório!" });
+      }
+
+      const chamado = await ChamadaModel.findById(id);
+      if (!chamado) {
+        return res.status(404).json({ erro: "Chamado não encontrado!" });
+      }
+
+      if (req.usuario?.nivel_acesso === "tecnico" && tecnico_id && tecnico_id !== req.usuario.id) {
+        return res.status(403).json({ erro: "Você só pode assumir ou atualizar chamados em seu próprio nome." });
+      }
+
+      const tecnicoResponsavel =
+        tecnico_id ||
+        (status === 'em_atendimento' && ['tecnico', 'admin'].includes(req.usuario?.nivel_acesso)
+          ? req.usuario.id
+          : null);
+
+      if (
+        tecnicoResponsavel &&
+        chamado.tecnico_id &&
+        chamado.tecnico_id !== tecnicoResponsavel &&
+        req.usuario?.nivel_acesso !== "admin"
+      ) {
+        return res.status(409).json({ erro: "Este chamado já está atribuído a outro técnico." });
+      }
+
+      await withTransaction(async (connection) => {
+        if (tecnicoResponsavel) {
+          await ChamadaModel.setTecnico({ id, tecnico_id: tecnicoResponsavel }, connection);
+        }
+
+        await ChamadaModel.updateStatus({ id, status }, connection);
+
+        if (status === 'resolvido' || status === 'cancelado') {
+          await EquipamentoModel.updateStatus({ id: chamado.equipamento_id, status: 'operacional' }, connection);
+        }
+      });
+
+      return res.status(200).json({ ok: true, mensagem: "Status atualizado com sucesso!" });
+    } catch (erro) {
+      console.error("Erro ao atualizar status:", erro);
+      return res.status(500).json({ erro: "Erro interno ao atualizar chamado!" });
+    }
+  }
+}
+
+module.exports = ChamadaController;

@@ -7,10 +7,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// POST /auth/registro - cria uma conta
-router.post('/registro', authController.registro);
-
-// POST /auth/login - autentica e retorna o token JWT
+router.post('/registro', authController.register);
 router.post('/login', authController.login);
 
 module.exports = router;
