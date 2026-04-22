@@ -60,7 +60,7 @@ const Cadastro = () => {
                 return;
             }
 
-            router.push('/login');
+            router.push('/');
         } catch (err) {
             setErro('Não foi possível conectar ao servidor.');
         } finally {
@@ -211,7 +211,7 @@ const Cadastro = () => {
 
                     <p className="text-muted-foreground mt-4 text-center text-sm">
                         Já tem cadastro?{' '}
-                        <a href="/login" className="text-card-foreground hover:underline font-medium">
+                        <a href="/" className="text-card-foreground hover:underline font-medium">
                             Fazer login
                         </a>
                     </p>
