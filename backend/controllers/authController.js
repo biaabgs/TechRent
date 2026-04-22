@@ -31,7 +31,7 @@ class AuthController {
 
       const senha = await bcrypt.hash(senhaSemHash, 10);
 
-      const novaConta = await UserModel.create({ nome, email, senha, nivel_acesso: nivel_acesso || "cliente" });
+      const novaConta = await UserModel.criar({ nome, email, senha, nivel_acesso: nivel_acesso || "cliente" });
 
       return res.status(201).json({ ok: true, mensagem: "Usuario criado com sucesso!", novaContaId: novaConta});
     } catch (error) {
@@ -46,7 +46,7 @@ class AuthController {
       return res.status(400).json({ error: "Campos faltando para login!" });
     };
     try {
-      const userExists = await UserModel.findByEmail(email);
+      const userExists = await UserModel.buscarPorEmail(email);
       if (!userExists) {
         return res.status(404).json({ error: "Credenciais inválidas!" });
       };

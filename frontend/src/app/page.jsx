@@ -2,8 +2,9 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Login from "@/components/login-form";
 
-export default function Hero() {
+export default function Home() {
     return (
         <div className="flex min-h-screen items-center justify-center overflow-hidden">
             <div
@@ -31,9 +32,16 @@ export default function Hero() {
                         </a>
                     </div>
                 </div>
-                {/* <div className="relative w-full pt-0 md:pt-20 pb-6 md:pb-10 before:absolute before:w-full before:h-full before:bg-linear-to-r before:from-sky-100 before:via-white before:to-amber-100 before:rounded-full before:top-24 before:blur-3xl before:-z-10 dark:before:from-slate-800 dark:before:via-black dark:before:to-stone-700 dark:before:rounded-full dark:before:blur-3xl dark:before:-z-10"> */}
                 <div
-                    className="relative w-full pt-0 md:pt-20 pb-6 md:pb-10 before:absolute before:w-full before:h-full before:bg-linear-to-r before:from-sky-100 before:via-white before:to-amber-100 before:rounded-full before:top-24 before:blur-3xl before:-z-10 dark:before:from-slate-800 dark:before:via-black dark:before:to-stone-700 dark:before:rounded-full dark:before:blur-3xl dark:before:-z-10" />
+                    className="relative 
+                    w-full pt-0 md:pt-20 
+                    pb-6 md:pb-10 before:absolute before:w-full 
+                    before:h-full before:bg-linear-to-r 
+                    before:from-sky-100 before:via-white 
+                    before:to-amber-100 before:rounded-full 
+                    before:top-24 before:blur-3xl before:-z-10 dark:before:from-slate-800 dark:before:via-black dark:before:to-stone-700 dark:before:rounded-full dark:before:blur-3xl dark:before:-z-10" >
+                    <Login />
+                </div>
             </div>
         </div>
     );

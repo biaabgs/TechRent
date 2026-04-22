@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
-import Logo from '@/components/shadcn-studio/logo';
 import AuthBackgroundShape from '@/assets/svg/auth-background-shape';
 
 const Login = () => {
@@ -66,8 +65,9 @@ const Login = () => {
       </div>
       <Card className='z-1 w-full border-none shadow-md sm:max-w-lg'>
         <CardHeader className='gap-6'>
-          <Logo className='gap-3' />
-
+          <div className="items-center justify-center flex">
+            <img src="/logo.svg" alt="Logo" className="gap-3 h-15 " />
+          </div>
           <div>
             <CardTitle className='mb-1.5 text-2xl'>Sign in to Shadcn Studio</CardTitle>
             <CardDescription className='text-base'>Ship Faster and Focus on Growth.</CardDescription>
