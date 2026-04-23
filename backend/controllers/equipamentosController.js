@@ -41,9 +41,9 @@ class EquipamentoController {
     }
   }
 
-  static async listAll(req, res) {
+  static async listarTodos(req, res) {
     try {
-      const equipamentos = await EquipamentoModel.findAll();
+      const equipamentos = await EquipamentoModel.listarTodos();
       return res.status(200).json({ ok: true, equipamentos });
     } catch (erro) {
       console.error("Erro ao listar todos equipamentos:", erro);

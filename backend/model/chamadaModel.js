@@ -102,11 +102,6 @@ class ChamadaModel {
         return result[0] || { chamados_abertos: 0, em_progresso: 0, taxa_resolucao_30d: 0 };
     }
 
-    static async getAtividadesRecentes() {
-        const sql = `SELECT * FROM view_atividades_recentes LIMIT 6`;
-        return await query(sql, []);
-    }
-
     static async update(id, { descricao, tecnico_id, prioridade, status }) {
         const sql = `UPDATE chamados SET descricao = ?, tecnico_id = ?, prioridade = ?, status = ? WHERE id = ?`;
         const result = await query(sql, [ descricao, tecnico_id, prioridade, status, id]);

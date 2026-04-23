@@ -5,6 +5,7 @@
 
 const ChamadaModel = require("../model/chamadaModel");
 const EquipamentoModel = require("../model/equipamentModel");
+const UsuarioModel = require("../model/usuarioModel");
 
 class DashboardController {
   static async viewAdmin(req, res) {
@@ -14,13 +15,13 @@ class DashboardController {
         equipamentos,
         kpis,
         equipamentosCriticos,
-        atividades
+        usuarios
       ] = await Promise.all([
         ChamadaModel.viewChamadas(),
         EquipamentoModel.viewEquipament(),
         ChamadaModel.getKpiMetrics(),
         EquipamentoModel.getEquipamentosCriticos(),
-        ChamadaModel.getAtividadesRecentes()
+        UsuarioModel.listarTodos()
       ]);
 
       return res.status(200).json({
@@ -33,7 +34,7 @@ class DashboardController {
         },
         estatisticas_chamados: chamados,
         estatisticas_equipamentos: equipamentos,
-        atividades_recentes: atividades,
+        listar_usuarios: usuarios,
         gerado_em: new Date()
       });
     } catch (erro) {

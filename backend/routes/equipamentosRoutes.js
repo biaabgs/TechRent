@@ -10,7 +10,7 @@ const { autenticar, autorizar } = require('../middlewares/auth');
 const EquipamentoController = require('../controllers/equipamentosController');
 
 router.get('/', autenticar, EquipamentoController.listFunctioning);
-router.get('/todos', autenticar, autorizar('admin'), EquipamentoController.listAll);
+router.get('/todos', autenticar, autorizar('admin'), EquipamentoController.listarTodos);
 router.get('/:id', autenticar, EquipamentoController.findById);
 
 router.post('/', autenticar, autorizar('admin'), EquipamentoController.create);

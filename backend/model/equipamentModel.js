@@ -21,7 +21,7 @@ class EquipamentoModel {
         return result[0] || null;
     }
 
-    static async findAll(){
+    static async listarTodos(){
         const sql = `SELECT * FROM equipamentos`;
         return await query(sql, []);
     }

@@ -7,6 +7,11 @@ class UserModel {
         return result.insertId;
     };
 
+    static async listarTodos() {
+        const sql = `SELECT * FROM usuarios`;
+        return await query(sql, []);
+    }
+
     static async buscarPorId(id) {
         const sql = `SELECT * FROM usuarios WHERE id = ?`
         const result = await query(sql, [id]);
@@ -19,9 +24,9 @@ class UserModel {
         return result[0] || null;
     };
 
-    static async atualizar({ id, nome }) {
-        const sql = `UPDATE usuarios SET nome = ? WHERE id = ?`
-        const result = await query(sql, [nome, id])
+    static async atualizar({ id, nome, nivel_acesso }) {
+        const sql = `UPDATE usuarios SET nome = ?, nivel_acesso = ? WHERE id = ?`;
+        const result = await query(sql, [nome, nivel_acesso, id]);
         return result.affectedRows > 0;
     }
 
