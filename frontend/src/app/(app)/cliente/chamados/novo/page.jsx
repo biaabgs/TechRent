@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { chamadosService } from "@/services/chamados.service";
 import { equipamentosService } from "@/services/equipamentos.service";
 import { formatEnumLabel } from "@/lib/presentation";
-import { useAuth } from "@/hooks/useAuth";
 
 const INITIAL_FORM = {
   titulo: "",
@@ -17,9 +16,6 @@ const INITIAL_FORM = {
 };
 
 export default function NovoChamadoPage() {
-  // Proteção de rota
-  const { pronto } = useAuth("cliente");
-
   const [equipamentos, setEquipamentos] = useState([]);
   const [loadingEquip, setLoadingEquip] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -28,24 +24,15 @@ export default function NovoChamadoPage() {
   const [form, setForm] = useState(INITIAL_FORM);
 
   useEffect(() => {
-    if (!pronto) return;
-
-    setLoadingEquip(true);
     equipamentosService
       .listar()
       .then((data) => {
         setEquipamentos(data?.equipamentos || []);
         setError("");
       })
-      .catch((err) => {
-        console.error("Erro ao carregar equipamentos:", err);
-        setError("Não foi possível carregar a lista de equipamentos.");
-      })
+      .catch((err) => setError(err.message || "Erro ao carregar equipamentos"))
       .finally(() => setLoadingEquip(false));
-  }, [pronto]);
-
-  // Bloqueia renderização até auth estar pronto
-  if (!pronto) return null;
+  }, []);
 
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -55,13 +42,6 @@ export default function NovoChamadoPage() {
     event.preventDefault();
     setError("");
     setFeedback("");
-
-    // Validação básica de segurança
-    if (!form.equipamento_id) {
-      setError("Por favor, selecione um equipamento.");
-      return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -69,15 +49,10 @@ export default function NovoChamadoPage() {
         ...form,
         equipamento_id: Number(form.equipamento_id),
       });
-      
-      setFeedback("Chamado aberto com sucesso! Nossa equipe técnica será notificada.");
-      setForm(INITIAL_FORM); // Limpa o formulário após sucesso
-      
-      // Opcional: Redirecionar após alguns segundos
-      // setTimeout(() => router.push('/cliente/chamados'), 2000);
-      
+      setFeedback("Chamado aberto com sucesso. A equipe tecnica ja pode assumir o atendimento.");
+      setForm(INITIAL_FORM);
     } catch (err) {
-      setError(err.message || "Falha ao processar a abertura do chamado.");
+      setError(err.message || "Nao foi possivel abrir o chamado.");
     } finally {
       setSubmitting(false);
     }
@@ -89,175 +64,170 @@ export default function NovoChamadoPage() {
         title="Abrir novo chamado"
         description="Descreva o problema, selecione o equipamento operacional e defina a prioridade do atendimento."
       >
-        <form onSubmit={handleSubmit} className="surface-panel p-6 grid gap-6 shadow-sm">
-          {/* Título */}
+        <form onSubmit={handleSubmit} className="app-form-panel grid gap-4">
           <div className="grid gap-2">
-            <label htmlFor="titulo" className="text-sm font-bold text-foreground">
-              Título do problema
+            <label htmlFor="titulo" className="app-form-label">
+              Titulo do problema
             </label>
             <input
               id="titulo"
               className="app-form-control"
-              placeholder="Ex: Notebook do laboratório não liga"
+              placeholder="Ex: Notebook do laboratorio nao liga"
               value={form.titulo}
-              onChange={(e) => update("titulo", e.target.value)}
+              onChange={(event) => update("titulo", event.target.value)}
               required
             />
           </div>
 
-          {/* Descrição */}
           <div className="grid gap-2">
-            <label htmlFor="descricao" className="text-sm font-bold text-foreground">
-              Descrição detalhada
+            <label htmlFor="descricao" className="app-form-label">
+              Descricao detalhada
             </label>
             <textarea
               id="descricao"
-              className="app-form-control min-h-32 resize-none"
-              placeholder="Conte o que aconteceu, quando começou e se houve tentativas de correção."
+              className="app-form-control min-h-36"
+              placeholder="Conte o que aconteceu, quando comecou e se ja houve alguma tentativa de correcao."
               value={form.descricao}
-              onChange={(e) => update("descricao", e.target.value)}
+              onChange={(event) => update("descricao", event.target.value)}
               required
             />
           </div>
 
-          {/* Equipamento e Prioridade */}
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
-              <label htmlFor="equipamento" className="text-sm font-bold text-foreground">
+              <label htmlFor="equipamento" className="app-form-label">
                 Equipamento afetado
               </label>
               <select
                 id="equipamento"
                 className="app-form-control"
                 value={form.equipamento_id}
-                onChange={(e) => update("equipamento_id", e.target.value)}
+                onChange={(event) => update("equipamento_id", event.target.value)}
                 required
                 disabled={loadingEquip || equipamentos.length === 0}
               >
                 <option value="">
-                  {loadingEquip ? "Carregando..." : "Selecione o item"}
+                  {loadingEquip ? "Carregando equipamentos..." : "Selecione um equipamento"}
                 </option>
-                {equipamentos.map((eq) => (
-                  <option key={eq.id} value={eq.id}>
-                    {eq.nome} {eq.patrimonio ? `(${eq.patrimonio})` : ""}
+                {equipamentos.map((equipamento) => (
+                  <option key={equipamento.id} value={equipamento.id}>
+                    {equipamento.nome} {equipamento.patrimonio ? `- ${equipamento.patrimonio}` : ""}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="grid gap-2">
-              <label htmlFor="prioridade" className="text-sm font-bold text-foreground">
+              <label htmlFor="prioridade" className="app-form-label">
                 Prioridade
               </label>
               <select
                 id="prioridade"
                 className="app-form-control"
                 value={form.prioridade}
-                onChange={(e) => update("prioridade", e.target.value)}
+                onChange={(event) => update("prioridade", event.target.value)}
               >
                 <option value="baixa">Baixa</option>
-                <option value="media">Média</option>
+                <option value="media">Media</option>
                 <option value="alta">Alta</option>
               </select>
             </div>
           </div>
 
-          {/* Mensagens de Erro/Sucesso */}
-          {error && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive flex items-center gap-2">
-              <AlertCircleIcon className="size-4" />
+          {error ? (
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
-          )}
+          ) : null}
 
-          {feedback && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 flex items-center gap-2">
-              <ShieldCheckIcon className="size-4" />
+          {feedback ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               {feedback}
             </div>
-          )}
+          ) : null}
 
-          {/* Botão de Envio */}
-          <div className="flex flex-col gap-4 pt-4 border-t border-border/50">
-            <Button 
-              type="submit" 
-              disabled={submitting || loadingEquip || equipamentos.length === 0} 
-              size="lg"
-              className="w-full md:w-fit"
-            >
-              <ClipboardPlusIcon className="mr-2 h-5 w-5" />
-              {submitting ? "Processando..." : "Abrir chamado"}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Button type="submit" disabled={submitting || loadingEquip || equipamentos.length === 0} size="lg">
+              <ClipboardPlusIcon />
+              {submitting ? "Abrindo chamado..." : "Abrir chamado"}
             </Button>
-            <p className="text-xs text-muted-foreground italic">
-              * O equipamento ficará marcado como "Em Manutenção" no sistema até a resolução.
+            <p className="text-sm text-muted-foreground">
+              O equipamento selecionado passa a ficar indisponivel durante o atendimento.
             </p>
           </div>
         </form>
       </PageSection>
 
-      {/* Barra Lateral Informativa */}
-      <aside className="grid gap-6 content-start">
-        <section className="surface-panel p-6 border-l-4 border-l-primary shadow-sm">
-          <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-            Dicas Úteis
+      <div className="grid gap-6">
+        <section className="app-surface-panel">
+          <div className="hero-chip">
+            Atendimento guiado
           </div>
-          <h2 className="mt-4 text-xl font-bold leading-tight text-foreground">
-            Abertura eficiente
+          <h2 className="mt-4 text-2xl font-semibold leading-tight text-slate-950">
+            Abertura de chamado mais rapida e com menos retrabalho.
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            Relatos detalhados reduzem o tempo de diagnóstico em até 40%.
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Preencha bem os detalhes para a equipe tecnica assumir mais rapido e registrar a manutencao sem depender de informacoes soltas.
           </p>
 
-          <div className="mt-6 grid gap-4">
+          <div className="mt-6 grid gap-3">
             {[
               {
                 icon: ShieldCheckIcon,
-                title: "Equipamentos",
-                desc: "Apenas itens ativos aparecem aqui.",
+                title: "Equipamentos validos",
+                description: "A lista mostra apenas itens operacionais e liberados para abertura de chamado.",
               },
               {
                 icon: AlertCircleIcon,
-                title: "Prioridade",
-                desc: `Atualmente definida como ${formatEnumLabel(form.prioridade)}.`,
+                title: "Prioridade clara",
+                description: `Prioridade atual: ${formatEnumLabel(form.prioridade)}.`,
               },
               {
                 icon: CpuIcon,
-                title: "Diagnóstico",
-                desc: "Informe se o problema é intermitente ou constante.",
+                title: "Contexto tecnico",
+                description: "Descreva sintomas, horario e impacto para acelerar a triagem.",
               },
-            ].map((item, idx) => (
-              <div key={idx} className="flex gap-3 items-start">
-                <div className="mt-1 rounded-md bg-muted p-2 text-primary">
-                  <item.icon className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+            ].map((item) => (
+              <div key={item.title} className="surface-muted p-4">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-slate-950/6 p-2 text-slate-700">
+                    <item.icon className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">{item.title}</p>
+                    <p className="mt-1 text-sm text-slate-600">{item.description}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Mini lista de equipamentos para referência rápida */}
-        <section className="surface-panel p-6 shadow-sm">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
-            Resumo de Itens
+        <section className="app-form-panel">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Equipamentos disponiveis
           </h3>
-          <div className="grid gap-2">
+          <div className="mt-4 grid gap-3">
             {loadingEquip ? (
-              <div className="animate-pulse h-4 bg-muted rounded w-full"></div>
+              <p className="text-sm text-muted-foreground">Carregando equipamentos...</p>
+            ) : equipamentos.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum equipamento operacional disponivel para abertura de chamado.
+              </p>
             ) : (
-              equipamentos.slice(0, 3).map((eq) => (
-                <div key={eq.id} className="text-xs p-2 bg-muted/50 rounded border border-border/30">
-                  <span className="font-semibold block">{eq.nome}</span>
-                  <span className="text-muted-foreground">{eq.patrimonio || "Sem patrimônio"}</span>
+              equipamentos.slice(0, 4).map((equipamento) => (
+                <div key={equipamento.id} className="rounded-xl border border-border/70 bg-muted/35 p-4">
+                  <p className="font-medium text-foreground">{equipamento.nome}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {equipamento.categoria || "Sem categoria"}
+                    {equipamento.patrimonio ? ` - ${equipamento.patrimonio}` : ""}
+                  </p>
                 </div>
               ))
             )}
           </div>
         </section>
-      </aside>
+      </div>
     </div>
   );
 }

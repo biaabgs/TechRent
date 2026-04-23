@@ -1,7 +1,10 @@
-import { authService, STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from "@/services/auth.service";
+import { getToken } from "@/lib/auth-storage";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 async function request(path, options = {}) {
-  const token = authService.getToken();
+  const token = getToken();
+  console.log("Token recuperado para a requisição:", token);
 
   const headers = {
     "Content-Type": "application/json",
@@ -12,7 +15,7 @@ async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
   });
@@ -21,20 +24,16 @@ async function request(path, options = {}) {
   const data = isJson ? await response.json() : null;
 
   if (!response.ok) {
+
     if (response.status === 401) {
-      authService.clearSession(); 
-
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
+      localStorage.clear("techrent_user");
+      localStorage.clear("techrent_user");
+      window.location.href = "/";
     }
 
-    if (response.status === 403) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/unauthorized";
-      }
+    if(response.status === 403){
+      window.location.href = "/unauthorized";
     }
-
     const message = data?.error || data?.erro || data?.mensagem || "Erro na requisição";
     throw new Error(message);
   }
@@ -52,11 +51,6 @@ export const http = {
   put: (path, body) =>
     request(path, {
       method: "PUT",
-      body: JSON.stringify(body),
-    }),
-  patch: (path, body) =>
-    request(path, {
-      method: "PATCH",
       body: JSON.stringify(body),
     }),
   delete: (path) =>
