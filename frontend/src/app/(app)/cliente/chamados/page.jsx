@@ -7,19 +7,25 @@ import PageSection from "@/components/ui/page-section";
 import { Button } from "@/components/ui/button";
 import { chamadosService } from "@/services/chamados.service";
 import { formatEnumLabel, getPriorityBadgeClass, getTicketStatusBadgeClass } from "@/lib/presentation";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ClienteChamadosPage() {
+  const { pronto } = useAuth("cliente");
   const [chamados, setChamados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!pronto) return;
+
     chamadosService
       .list()
       .then((data) => setChamados(data?.chamados || []))
       .catch((err) => setError(err.message || "Erro ao carregar chamados."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [pronto]);
+
+  if (!pronto) return null;
 
   return (
     <PageSection

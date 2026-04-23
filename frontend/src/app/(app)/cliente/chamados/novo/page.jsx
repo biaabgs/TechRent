@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { chamadosService } from "@/services/chamados.service";
 import { equipamentosService } from "@/services/equipamentos.service";
 import { formatEnumLabel } from "@/lib/presentation";
+import { useAuth } from "@/hooks/useAuth";
 
 const INITIAL_FORM = {
   titulo: "",
@@ -16,6 +17,7 @@ const INITIAL_FORM = {
 };
 
 export default function NovoChamadoPage() {
+  const { pronto } = useAuth("cliente");
   const [equipamentos, setEquipamentos] = useState([]);
   const [loadingEquip, setLoadingEquip] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -24,6 +26,8 @@ export default function NovoChamadoPage() {
   const [form, setForm] = useState(INITIAL_FORM);
 
   useEffect(() => {
+    if (!pronto) return;
+
     equipamentosService
       .listar()
       .then((data) => {
@@ -32,7 +36,9 @@ export default function NovoChamadoPage() {
       })
       .catch((err) => setError(err.message || "Erro ao carregar equipamentos"))
       .finally(() => setLoadingEquip(false));
-  }, []);
+  }, [pronto]);
+
+  if (!pronto) return null;
 
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));

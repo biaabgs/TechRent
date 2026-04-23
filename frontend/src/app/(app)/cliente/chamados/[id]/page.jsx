@@ -12,20 +12,26 @@ import {
   getPriorityBadgeClass,
   getTicketStatusBadgeClass,
 } from "@/lib/presentation";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ChamadoDetalhePage() {
+  const { pronto } = useAuth("cliente");
   const [chamado, setChamado] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const params = useParams();
 
   useEffect(() => {
+    if (!pronto) return;
+
     chamadosService
       .findById(params?.id)
       .then((data) => setChamado(data?.chamado || null))
       .catch((err) => setError(err.message || "Erro ao buscar chamado"))
       .finally(() => setLoading(false));
-  }, [params?.id]);
+  }, [pronto, params?.id]);
+
+  if (!pronto) return null;
 
   return (
     <div className="dashboard-grid">

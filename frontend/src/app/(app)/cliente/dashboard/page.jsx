@@ -7,13 +7,17 @@ import { dashboardService } from "@/services/dashboard.service";
 import PageSection from "@/components/ui/page-section";
 import { Button } from "@/components/ui/button";
 import { formatEnumLabel, getTicketStatusBadgeClass } from "@/lib/presentation";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ClienteDashboardPage() {
+  const { pronto } = useAuth("cliente");
   const [chamados, setChamados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!pronto) return;
+
     async function carregarDados() {
       try {
         const response = await dashboardService.cliente();
@@ -26,7 +30,9 @@ export default function ClienteDashboardPage() {
     }
 
     carregarDados();
-  }, []);
+  }, [pronto]);
+
+  if (!pronto) return null;
 
   const totalChamados = chamados.length;
   const chamadosAbertos = chamados.filter((item) => item.status === "aberto").length;
