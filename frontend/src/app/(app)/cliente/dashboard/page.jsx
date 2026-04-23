@@ -7,7 +7,6 @@ import { dashboardService } from "@/services/dashboard.service";
 import PageSection from "@/components/ui/page-section";
 import { Button } from "@/components/ui/button";
 import { formatEnumLabel, getTicketStatusBadgeClass } from "@/lib/presentation";
-import { getToken } from "@/lib/auth-storage";
 
 export default function ClienteDashboardPage() {
   const [chamados, setChamados] = useState([]);
@@ -15,28 +14,19 @@ export default function ClienteDashboardPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-  const token = getToken();
-
-  if (!token) {
-    console.warn("Redirecionando: Usuário sem token.");
-    window.location.href = "/"; 
-    return;
-  }
-
-  async function carregarDados() {
-    try {
-      setLoading(true);
-      const response = await dashboardService.cliente();
-      setChamados(response.chamados || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    async function carregarDados() {
+      try {
+        const response = await dashboardService.cliente();
+        setChamados(response.chamados || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
-  carregarDados();
-}, []);
+    carregarDados();
+  }, []);
 
   const totalChamados = chamados.length;
   const chamadosAbertos = chamados.filter((item) => item.status === "aberto").length;

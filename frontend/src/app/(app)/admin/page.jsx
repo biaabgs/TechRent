@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, LineChart, Line
@@ -25,12 +26,18 @@ import {
 
 import { EllipsisVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button'
+import { getSessionUser } from "@/lib/auth-storage";
+import { Sidebar } from "@/components/ui/sidebar";
+
 
 async function fetchAdmin(token) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/admin`, {
         headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error("Erro ao carregar dashboard");
+    if (!res.ok) {
+        if (res.status === 401) throw new Error("Sessão expirada. Faça login novamente.");
+        throw new Error("Erro ao carregar dashboard");
+    }
     return res.json();
 }
 
@@ -192,15 +199,12 @@ function EditUserModal({ isOpen, onClose, item, onSave }) {
     );
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
 export default function AdminDashboard() {
+    const router = useRouter();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // Estado único e centralizado para a lista de usuários
     const [usuarios, setUsuarios] = useState([]);
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUsuario, setSelectedUsuario] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
@@ -214,102 +218,66 @@ export default function AdminDashboard() {
     );
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        // CORREÇÃO: Usar a mesma chave do login
+        const token = localStorage.getItem("techrent_token");
+
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+
         fetchAdmin(token)
             .then((res) => {
                 setData(res);
-                // Popula o estado de usuários logo após o fetch
                 setUsuarios(res.listar_usuarios ?? []);
             })
-            .catch((e) => setError(e.message))
+            .catch((e) => {
+                setError(e.message);
+                if (e.message.includes("login")) router.push('/login');
+            })
             .finally(() => setLoading(false));
-    }, []);
+    }, [router]);
 
-    function handleEditUsuario(usuario) {
-        setSelectedUsuario(usuario);
-        setIsModalOpen(true);
-    }
-
+    // Funções de Edição e Exclusão (Corrigidas para usar techrent_token)
     async function handleSaveUsuario(updatedItem) {
         try {
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("techrent_token");
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/admin/usuarios/${updatedItem.id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    nome: updatedItem.nome,
-                    nivel_acesso: updatedItem.nivel_acesso,
-                }),
+                body: JSON.stringify({ nome: updatedItem.nome, nivel_acesso: updatedItem.nivel_acesso }),
             });
-            if (!res.ok) throw new Error("Erro ao salvar usuário");
-
-            setUsuarios((prev) =>
-                prev.map((u) =>
-                    u.id === updatedItem.id
-                        ? { ...u, nome: updatedItem.nome, nivel_acesso: updatedItem.nivel_acesso }
-                        : u
-                )
-            );
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsModalOpen(false);
-        }
+            if (!res.ok) throw new Error("Erro ao salvar");
+            setUsuarios(prev => prev.map(u => u.id === updatedItem.id ? { ...u, ...updatedItem } : u));
+        } catch (err) { alert(err.message); }
+        finally { setIsModalOpen(false); }
     }
 
     async function handleDeleteUsuario(usuario) {
-        if (!window.confirm(`Deseja realmente excluir "${usuario.nome}"?`)) return;
-
+        if (!window.confirm(`Excluir "${usuario.nome}"?`)) return;
         try {
             setDeletingId(usuario.id);
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("techrent_token");
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/dashboard/admin/usuarios/${usuario.id}`, {
                 method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` },
             });
-
-            if (!res.ok) throw new Error("Erro ao excluir usuário");
-
-            // Remove da lista local sem precisar recarregar a página
-            setUsuarios((prev) => prev.filter((u) => u.id !== usuario.id));
-        } catch (err) {
-            console.error(err);
-            alert("Erro ao excluir o usuário. Tente novamente.");
-        } finally {
-            setDeletingId(null);
-        }
+            if (!res.ok) throw new Error("Erro ao excluir");
+            setUsuarios(prev => prev.filter(u => u.id !== usuario.id));
+        } catch (err) { alert(err.message); }
+        finally { setDeletingId(null); }
     }
 
-    if (loading) return <p className="p-8 text-sm text-gray-400">Carregando painel...</p>;
-    if (error) return <p className="p-8 text-sm text-red-500">{error}</p>;
+    if (loading) return <div className="p-8 flex items-center gap-3"><div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" /> <span className="text-sm text-gray-500">Carregando painel...</span></div>;
+    if (error) return <div className="p-8"><div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">{error}</div><Button onClick={() => window.location.reload()} className="mt-4">Tentar novamente</Button></div>;
 
-    const {
-        kpis = {},
-        estatisticas_chamados = [],
-        estatisticas_equipamentos = [],
-    } = data;
-
-    const equipamentosCriticos = Array.isArray(kpis.equipamentos_criticos)
-        ? kpis.equipamentos_criticos
-        : [];
-
-    const pieData = estatisticas_chamados.map((s) => ({
-        name: LABEL[s.status] ?? s.status,
-        value: Number(s.total),
-        cor: COR[s.status] ?? "#888",
-    }));
-
-    const barEqData = estatisticas_equipamentos.map((e) => ({
-        name: LABEL[e.status] ?? e.status,
-        total: Number(e.total),
-        fill: COR[e.status] ?? "#888",
-    }));
+    const { kpis = {}, estatisticas_chamados = [], estatisticas_equipamentos = [] } = data;
+    const equipamentosCriticos = kpis.equipamentos_criticos ?? [];
+    const pieData = estatisticas_chamados.map(s => ({ name: LABEL[s.status] ?? s.status, value: Number(s.total), cor: COR[s.status] ?? "#888" }));
+    const barEqData = estatisticas_equipamentos.map(e => ({ name: LABEL[e.status] ?? e.status, total: Number(e.total), fill: COR[e.status] ?? "#888" }));
 
     return (
         <>

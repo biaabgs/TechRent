@@ -17,7 +17,7 @@ export default function Home() {
                     </Badge>
                     <h1
                         className="mt-6 max-w-[17ch] font-satoshi font-semibold text-4xl leading-[1.2]! tracking-tight md:text-5xl lg:text-[2.75rem] xl:text-[3.25rem]">
-                        Nossa empresa adaklfjkgfjksldak
+                        Controle seus chamados
                     </h1>
                     <p className="mt-6 max-w-[60ch] text-foreground/80 text-lg">
                         Este MVP tem foco em centralizar o relato de problemas de TI,

@@ -1,10 +1,9 @@
 import { getToken } from "@/lib/auth-storage";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 async function request(path, options = {}) {
   const token = getToken();
-  console.log("Token recuperado para a requisição:", token);
 
   const headers = {
     "Content-Type": "application/json",
@@ -24,16 +23,16 @@ async function request(path, options = {}) {
   const data = isJson ? await response.json() : null;
 
   if (!response.ok) {
-
     if (response.status === 401) {
-      localStorage.clear("techrent_user");
-      localStorage.clear("techrent_user");
+      localStorage.removeItem("techrent_token");
+      localStorage.removeItem("techrent_user");
       window.location.href = "/";
     }
 
-    if(response.status === 403){
-      window.location.href = "/unauthorized";
+    if (response.status === 403) {
+      window.location.href = "/";
     }
+
     const message = data?.error || data?.erro || data?.mensagem || "Erro na requisição";
     throw new Error(message);
   }

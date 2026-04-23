@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
-import AuthBackgroundShape from '@/assets/svg/auth-background-shape';
+import { setSession, parseJwtPayload } from '@/lib/auth-storage';
 
 const Login = () => {
   const router = useRouter();
@@ -38,21 +38,38 @@ const Login = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        setErro(data.mensagem || 'Erro ao fazer login');
+        setErro(data.mensagem || 'E-mail ou senha incorretos.');
+        setCarregando(false);
         return;
       }
 
-      localStorage.setItem('token', data.token);
+      const payload = parseJwtPayload(data.token);
 
-      // Decodifica o payload do JWT para saber o nível de acesso
-      const payload = JSON.parse(atob(data.token.split('.')[1]));
+      if (!payload) {
+        setErro("Erro ao processar dados de acesso.");
+        setCarregando(false);
+        return;
+      }
 
-      if (payload.nivel_acesso === 'admin') router.push('/admin');
-      else if (payload.nivel_acesso === 'tecnico') router.push('/tecnico');
-      else router.push('/cliente');
+      setSession({
+        token: data.token,
+        user: {
+          id: payload.id,
+          nome: payload.nome,
+          email: payload.email,
+          nivel_acesso: payload.nivel_acesso,
+        }
+      });
+
+      const rotaDestino =
+        payload.nivel_acesso === 'admin' ? '/admin' :
+          payload.nivel_acesso === 'tecnico' ? '/tecnico' :
+            '/cliente/dashboard';
+
+      router.replace(rotaDestino);
+
     } catch (err) {
       setErro('Não foi possível conectar ao servidor.');
-    } finally {
       setCarregando(false);
     }
   };
@@ -75,11 +92,11 @@ const Login = () => {
             {/* Email */}
             <div className='space-y-1'>
               <Label htmlFor='email'>E-mail*</Label>
-              <Input 
-                type='email' 
-                id='email' 
+              <Input
+                type='email'
+                id='email'
                 name='email' // Importante: deve ser igual à chave no useState
-                placeholder='seu@email.com' 
+                placeholder='seu@email.com'
                 value={form.email}
                 onChange={handleChange}
                 required
@@ -155,3 +172,105 @@ const Login = () => {
 }
 
 export default Login;
+
+
+
+
+/* 
+
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+
+// Importe suas funções utilitárias (ajuste o path conforme seu projeto)
+import { setSession, parseJwtPayload } from '@/lib/auth'; 
+
+const Login = () => {
+  const router = useRouter();
+  const [form, setForm] = useState({ email: '', senha: '' });
+  const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (erro) setErro('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setCarregando(true);
+    setErro('');
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErro(data.mensagem || 'E-mail ou senha incorretos.');
+        setCarregando(false);
+        return;
+      }
+
+      // 1. Usa sua função robusta para decodificar
+      const payload = parseJwtPayload(data.token);
+
+      if (!payload) {
+        setErro("Erro ao processar dados de acesso.");
+        setCarregando(false);
+        return;
+      }
+
+      // 2. Salva na sessão usando as chaves padronizadas (evita o "piscar")
+      setSession({
+        token: data.token,
+        user: {
+          id: payload.id,
+          nome: payload.nome,
+          email: payload.email,
+          nivel_acesso: payload.nivel_acesso,
+        }
+      });
+
+      // 3. Redirecionamento baseado no nível de acesso
+      const rotaDestino = 
+        payload.nivel_acesso === 'admin' ? '/admin' :
+        payload.nivel_acesso === 'tecnico' ? '/tecnico' : 
+        '/cliente/dashboard';
+
+      router.replace(rotaDestino); // replace evita que o usuário volte ao login pelo botão "voltar"
+      
+    } catch (err) {
+      setErro('Não foi possível conectar ao servidor.');
+      setCarregando(false);
+    }
+  };
+
+  return (
+    // ... Seu JSX permanece quase igual, apenas certifique-se de que o onSubmit está no form
+    <div className='relative flex h-auto min-h-screen items-center justify-center px-4 py-10'>
+     
+       <form onSubmit={handleSubmit} className='space-y-4'>
+    
+          <Button type="submit" className="w-full" disabled={carregando}>
+             {carregando ? 'Entrando...' : 'Entrar'}
+          </Button>
+       </form>
+    </div>
+  );
+}
+
+export default Login;
+
+*/

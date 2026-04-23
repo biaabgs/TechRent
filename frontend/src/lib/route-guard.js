@@ -1,5 +1,5 @@
 const ROLE_HOME = {
-  admin: "/admin/dashboard",
+  admin: "/admin",
   tecnico: "/tecnico/dashboard",
   cliente: "/cliente/dashboard",
 };
