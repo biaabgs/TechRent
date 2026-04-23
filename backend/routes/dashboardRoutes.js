@@ -13,5 +13,6 @@ router.get('/tecnico', autenticar, autorizar('admin', 'tecnico'), DashboardContr
 router.get('/cliente', autenticar, autorizar('cliente', 'admin'), DashboardController.viewCliente);
 
 router.put('/admin/usuarios/:id', UsuarioController.atualizar);
+router.delete('/admin/usuarios/:id', UsuarioController.deletar);
 
 module.exports = router;

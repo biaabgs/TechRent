@@ -1,6 +1,6 @@
 const { query } = require('../config/database');
 
-class UserModel {
+class UsuarioModel {
     static async criar({ nome, email, senha, nivel_acesso }) {
         const sql = `INSERT INTO usuarios ( nome, email, senha, nivel_acesso) VALUES (?, ?, ?, ?)`
         const result = await query(sql, [nome, email, senha, nivel_acesso]);
@@ -30,11 +30,12 @@ class UserModel {
         return result.affectedRows > 0;
     }
 
-    static async deleteById(id) {
+    static async deletar(id) {
         const sql = `DELETE FROM usuarios WHERE id = ?`;
         const result = await query(sql, [id]);
         return result.affectedRows > 0;
     };
+
 };
 
-module.exports = UserModel;
+module.exports = UsuarioModel;

@@ -21,7 +21,8 @@ class DashboardController {
         EquipamentoModel.viewEquipament(),
         ChamadaModel.getKpiMetrics(),
         EquipamentoModel.getEquipamentosCriticos(),
-        UsuarioModel.listarTodos()
+        UsuarioModel.listarTodos(),
+        UsuarioModel.buscarPorId(req.usuario.id)
       ]);
 
       return res.status(200).json({
