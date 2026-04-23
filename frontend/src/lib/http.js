@@ -1,7 +1,7 @@
-import { getToken } from "@/lib/auth-storage";
+import { authService, STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from "@/services/auth.service";
 
 async function request(path, options = {}) {
-  const token = getToken();
+  const token = authService.getToken();
 
   const headers = {
     "Content-Type": "application/json",
@@ -22,13 +22,17 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     if (response.status === 401) {
-      localStorage.removeItem("techrent_token");
-      localStorage.removeItem("techrent_user");
-      window.location.href = "/";
+      authService.clearSession(); 
+
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     }
 
     if (response.status === 403) {
-      window.location.href = "/unauthorized";
+      if (typeof window !== "undefined") {
+        window.location.href = "/unauthorized";
+      }
     }
 
     const message = data?.error || data?.erro || data?.mensagem || "Erro na requisição";
@@ -48,6 +52,11 @@ export const http = {
   put: (path, body) =>
     request(path, {
       method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  patch: (path, body) =>
+    request(path, {
+      method: "PATCH",
       body: JSON.stringify(body),
     }),
   delete: (path) =>

@@ -2,14 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { STORAGE_TOKEN_KEY, STORAGE_USER_KEY } from "@/services/auth.service"; 
 
 export function useAuth(nivelExigido) {
   const router = useRouter();
   const [pronto, setPronto] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("techrent_token");
-    const usuario = JSON.parse(localStorage.getItem("techrent_user") || "null");
+    const token = localStorage.getItem(STORAGE_TOKEN_KEY);
+    const userRaw = localStorage.getItem(STORAGE_USER_KEY);
+    
+    let usuario = null;
+    try {
+      usuario = JSON.parse(userRaw || "null");
+    } catch (e) {
+      usuario = null;
+    }
 
     if (!token || !usuario) {
       router.replace("/");
@@ -17,12 +25,12 @@ export function useAuth(nivelExigido) {
     }
 
     if (nivelExigido && usuario.nivel_acesso !== nivelExigido) {
-      router.replace("/unauthorized");
+      router.replace("/");
       return;
     }
 
     setPronto(true);
-  }, []);
+  }, [nivelExigido, router]);
 
   return { pronto };
 }
